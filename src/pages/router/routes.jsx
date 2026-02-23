@@ -1,45 +1,50 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
+
+// LOGIN (Corrigido o caminho conforme sua estrutura)
+import Login from "../components/Login";
 
 // Home
 import TelaInicial from "../Home/Home";
-// Cadastro
-import CadastroCarros from "../Cadastro/CadastroCarros";
-import CadastroPneus from "../Cadastro/CadastroPneus";
-import Pesquisa from "../Cadastro/Pesquisa";
-// Calibragem
+
+// Pneus
+import PneusHome from "../Pneus/PneusHome";
+import PesquisaPneus from "../Pneus/PesquisaPneus";
+import AtualizarCadastro from "../Pneus/AtualizarCadastro";
+
+// Carros
+import CarrosInfo from "../Carros/CarrosInfo";
+
+// Calibragem, Equipamentos, Movimentações, Controle KM
 import Calibragem from "../Calibragem/Calibragem";
 import AtualizarCalibragem from "../Calibragem/Atualizar";
 import GraficoCalibragem from "../Calibragem/Grafico";
 import HistoricoCalibragem from "../Calibragem/Historico";
 import ImprimirCalibragem from "../Calibragem/Imprimir";
-// Carros
-import CarrosInfo from "../Carros/CarrosInfo";
-// Equipamentos
 import Equipamentos from "../Equipamentos/Equipamentos";
-// Movimentações
 import Movimentacoes from "../Movimentacoes/Movimentacoes";
 import AtualizarMovimentacoes from "../Movimentacoes/Atualizar";
 import GraficoMovimentacoes from "../Movimentacoes/Grafico";
 import HistoricoMovimentacoes from "../Movimentacoes/Historico";
-// Número de Fogo
-import NumeroFogo from "../NumeroFogo/NumeroFogo";
-// Pneus
-import PneusInfo from "../Pneus/PneusInfo";
+import ControleKM from "../ControleDeKM/ControleKM";
 
-// REFORMADORA - IMPORTANTE: O arquivo PneusEntregues.jsx PRECISA existir nesta pasta
+// REFORMADORA
 import ReformadoraHome from "../Reformadora/ReformadoraHome";
-import Coleta from "../Reformadora/Coleta";
+import EnviarColeta from "../Reformadora/EnviarColeta";
+import AtualizarColeta from "../Reformadora/AtualizarColeta";
 import ColetasFeitas from "../Reformadora/ColetasFeitas";
 import DadosImportantes from "../Reformadora/DadosImportantes";
 import HistoricoPneusRef from "../Reformadora/HistoricoPneusRef";
-import PneusNaReformadora from "../Reformadora/PneusNaReformadora";
-import PneusEntregues from "../Reformadora/PneusEntregues";
+import IndicadoresRecapagem from "../Reformadora/IndicadoresRecapagem";
 
-// Components
-import Header from "../Components/Header";
-import Sidebar from "../Components/Sidebar";
+// --- COMPONENTE DE PROTEÇÃO ---
+const RotaProtegida = ({ children }) => {
+  const estaAutenticado = localStorage.getItem("autenticado") === "true";
+  if (!estaAutenticado) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
-// Componente de erro para quando a página não existe
 const Pagina404 = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
     <h1 className="text-4xl font-bold text-red-600 mb-4">404</h1>
@@ -58,53 +63,212 @@ const Pagina404 = () => (
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<TelaInicial />} />
+      {/* ROTA DE LOGIN (Livre para acesso) */}
+      <Route path="/login" element={<Login />} />
 
-      {/* Cadastro */}
-      <Route path="/cadastro/carros" element={<CadastroCarros />} />
-      <Route path="/cadastro/pneus" element={<CadastroPneus />} />
-      <Route path="/cadastro/pesquisa" element={<Pesquisa />} />
-
-      {/* Calibragem */}
-      <Route path="/calibragem" element={<Calibragem />} />
-      <Route path="/calibragem/atualizar" element={<AtualizarCalibragem />} />
-      <Route path="/calibragem/grafico" element={<GraficoCalibragem />} />
-      <Route path="/calibragem/historico" element={<HistoricoCalibragem />} />
-      <Route path="/calibragem/imprimir" element={<ImprimirCalibragem />} />
-
-      <Route path="/carros" element={<CarrosInfo />} />
-      <Route path="/equipamentos" element={<Equipamentos />} />
-
-      {/* Movimentações */}
-      <Route path="/movimentacoes" element={<Movimentacoes />} />
+      {/* TODAS AS ROTAS ABAIXO EXIGEM LOGIN */}
       <Route
-        path="/movimentacoes/atualizar"
-        element={<AtualizarMovimentacoes />}
-      />
-      <Route path="/movimentacoes/grafico" element={<GraficoMovimentacoes />} />
-      <Route
-        path="/movimentacoes/historico"
-        element={<HistoricoMovimentacoes />}
+        path="/"
+        element={
+          <RotaProtegida>
+            <TelaInicial />
+          </RotaProtegida>
+        }
       />
 
-      <Route path="/numero-fogo" element={<NumeroFogo />} />
-      <Route path="/pneus" element={<PneusInfo />} />
-
-      {/* REFORMADORA - Rotas aninhadas */}
-      <Route path="/reformadora">
-        <Route index element={<ReformadoraHome />} />
-        <Route path="coleta" element={<Coleta />} />
-        <Route path="coletas-feitas" element={<ColetasFeitas />} />
-        <Route path="pneus-na-reformadora" element={<PneusNaReformadora />} />
-        <Route path="pneus-entregues" element={<PneusEntregues />} />
-        <Route path="dados-importantes" element={<DadosImportantes />} />
-        <Route path="historico-pneus" element={<HistoricoPneusRef />} />
+      {/* MÓDULO PNEUS */}
+      <Route path="/pneus">
+        <Route
+          index
+          element={
+            <RotaProtegida>
+              <PneusHome />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="busca"
+          element={
+            <RotaProtegida>
+              <PesquisaPneus />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="editar/:empresa/:fogo"
+          element={
+            <RotaProtegida>
+              <AtualizarCadastro />
+            </RotaProtegida>
+          }
+        />
       </Route>
 
-      <Route path="/header" element={<Header />} />
-      <Route path="/sidebar" element={<Sidebar />} />
+      {/* MÓDULO REFORMADORA */}
+      <Route path="/reformadora">
+        <Route
+          index
+          element={
+            <RotaProtegida>
+              <ReformadoraHome />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="enviar"
+          element={
+            <RotaProtegida>
+              <EnviarColeta />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="atualizar"
+          element={
+            <RotaProtegida>
+              <AtualizarColeta />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="consultar"
+          element={
+            <RotaProtegida>
+              <ColetasFeitas />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="dados-importantes"
+          element={
+            <RotaProtegida>
+              <DadosImportantes />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="historico"
+          element={
+            <RotaProtegida>
+              <HistoricoPneusRef />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="indicadores"
+          element={
+            <RotaProtegida>
+              <IndicadoresRecapagem />
+            </RotaProtegida>
+          }
+        />
+      </Route>
 
-      {/* Fallback global */}
+      <Route
+        path="/carros"
+        element={
+          <RotaProtegida>
+            <CarrosInfo />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/controle-km"
+        element={
+          <RotaProtegida>
+            <ControleKM />
+          </RotaProtegida>
+        }
+      />
+
+      <Route path="/calibragem">
+        <Route
+          index
+          element={
+            <RotaProtegida>
+              <Calibragem />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="atualizar"
+          element={
+            <RotaProtegida>
+              <AtualizarCalibragem />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="grafico"
+          element={
+            <RotaProtegida>
+              <GraficoCalibragem />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="historico"
+          element={
+            <RotaProtegida>
+              <HistoricoCalibragem />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="imprimir"
+          element={
+            <RotaProtegida>
+              <ImprimirCalibragem />
+            </RotaProtegida>
+          }
+        />
+      </Route>
+
+      <Route path="/movimentacoes">
+        <Route
+          index
+          element={
+            <RotaProtegida>
+              <Movimentacoes />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="atualizar"
+          element={
+            <RotaProtegida>
+              <AtualizarMovimentacoes />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="grafico"
+          element={
+            <RotaProtegida>
+              <GraficoMovimentacoes />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="historico"
+          element={
+            <RotaProtegida>
+              <HistoricoMovimentacoes />
+            </RotaProtegida>
+          }
+        />
+      </Route>
+
+      <Route
+        path="/equipamentos"
+        element={
+          <RotaProtegida>
+            <Equipamentos />
+          </RotaProtegida>
+        }
+      />
+
+      {/* Se der erro 404, volta para o início (que vai pedir login se necessário) */}
       <Route path="*" element={<Pagina404 />} />
     </Routes>
   );
