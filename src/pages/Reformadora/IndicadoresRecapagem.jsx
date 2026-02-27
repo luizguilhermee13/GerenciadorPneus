@@ -27,7 +27,8 @@ import {
 } from "lucide-react";
 
 function IndicadoresRecapagem() {
-  const [data, setData] = useState([]);
+  const [dataEnvio, setDataEnvio] = useState([]); // Itens ENVIADOS no período
+  const [dataEntrega, setDataEntrega] = useState([]); // Itens ENTREGUES no período
   const [loading, setLoading] = useState(true);
 
   const [anoSelecionado, setAnoSelecionado] = useState(
@@ -71,14 +72,25 @@ function IndicadoresRecapagem() {
         dataFim = `${anoSelecionado}-${mesFormatado}-${ultimoDia}`;
       }
 
-      const { data: itens, error } = await supabase
+      // BUSCA 1: Pneus que saíram para a reformadora (baseado na data da coleta)
+      const { data: enviados, error: err1 } = await supabase
         .from("itens_coleta")
         .select(`*, coletas!inner(data_envio)`)
         .gte("coletas.data_envio", dataInicio)
         .lte("coletas.data_envio", dataFim);
 
-      if (error) throw error;
-      setData(itens || []);
+      // BUSCA 2: Pneus que chegaram (baseado no campo data_entrega da tabela itens_coleta)
+      const { data: entregues, error: err2 } = await supabase
+        .from("itens_coleta")
+        .select(`*, coletas(data_envio)`)
+        .gte("data_entrega", dataInicio)
+        .lte("data_entrega", dataFim)
+        .eq("status_item", "ENTREGUE");
+
+      if (err1 || err2) throw err1 || err2;
+
+      setDataEnvio(enviados || []);
+      setDataEntrega(entregues || []);
     } catch (err) {
       console.error("Erro nos indicadores:", err);
     } finally {
@@ -87,18 +99,19 @@ function IndicadoresRecapagem() {
   };
 
   const stats = useMemo(() => {
-    const totalColetados = data.length;
-    const totalEntregues = data.filter(
-      (i) => i.status_item === "ENTREGUE",
-    ).length;
-    const totalInvestido = data.reduce(
-      (acc, curr) => acc + (curr.valor_reforma || 0),
+    const totalColetados = dataEnvio.length;
+    const totalEntregues = dataEntrega.length;
+    const totalInvestido = dataEnvio.reduce(
+      (acc, curr) => acc + (Number(curr.valor_reforma) || 0),
       0,
     );
 
-    // Lógica para Medidas
-    const contagem275 = data.filter((i) => i.medida?.includes("275")).length;
-    const contagem215 = data.filter((i) => i.medida?.includes("215")).length;
+    const contagem275 = dataEnvio.filter((i) =>
+      i.medida?.includes("275"),
+    ).length;
+    const contagem215 = dataEnvio.filter((i) =>
+      i.medida?.includes("215"),
+    ).length;
 
     const dadosMedidas = [
       { name: "275/80R22,5", quantidade: contagem275 },
@@ -106,34 +119,33 @@ function IndicadoresRecapagem() {
     ];
 
     const motivos = {
-      reformas: data.filter((i) => i.motivo_saida === "REFORMA").length,
-      consertos: data.filter((i) => i.motivo_saida === "CONSERTO").length,
-      recusados: data.filter(
+      reformas: dataEnvio.filter((i) => i.motivo_saida === "REFORMA").length,
+      consertos: dataEnvio.filter((i) => i.motivo_saida === "CONSERTO").length,
+      recusados: dataEnvio.filter(
         (i) => i.motivo_saida === "RECUSADO" || i.status_item === "RECUSADO",
       ).length,
-      reclamados: data.filter(
+      reclamados: dataEnvio.filter(
         (i) => i.motivo_saida === "GARANTIA" || i.motivo_saida === "RECLAMACAO",
       ).length,
     };
 
+    // Gráfico de Pizza sem filtros de exclusão para bater com o total de envios
     const dadosPizza = [
       { name: "Reformas", value: motivos.reformas },
       { name: "Consertos", value: motivos.consertos },
       { name: "Recusados", value: motivos.recusados },
       { name: "Reclamações", value: motivos.reclamados },
-    ].filter((item) => item.value > 0);
+    ];
 
     const dadosGraficoPrincipal =
       mesSelecionado === 0
         ? mesesNomes.slice(1).map((mes, idx) => ({
             name: mes.substring(0, 3),
-            coletados: data.filter(
-              (item) => new Date(item.coletas.data_envio).getUTCMonth() === idx,
+            coletados: dataEnvio.filter(
+              (i) => new Date(i.coletas.data_envio).getUTCMonth() === idx,
             ).length,
-            entregues: data.filter(
-              (item) =>
-                new Date(item.coletas.data_envio).getUTCMonth() === idx &&
-                item.status_item === "ENTREGUE",
+            entregues: dataEntrega.filter(
+              (i) => new Date(i.data_entrega).getUTCMonth() === idx,
             ).length,
           }))
         : Array.from(
@@ -142,14 +154,11 @@ function IndicadoresRecapagem() {
               const dia = i + 1;
               return {
                 name: dia.toString(),
-                coletados: data.filter(
-                  (item) =>
-                    new Date(item.coletas.data_envio).getUTCDate() === dia,
+                coletados: dataEnvio.filter(
+                  (i) => new Date(i.coletas.data_envio).getUTCDate() === dia,
                 ).length,
-                entregues: data.filter(
-                  (item) =>
-                    new Date(item.coletas.data_envio).getUTCDate() === dia &&
-                    item.status_item === "ENTREGUE",
+                entregues: dataEntrega.filter(
+                  (i) => new Date(i.data_entrega).getUTCDate() === dia,
                 ).length,
               };
             },
@@ -163,14 +172,14 @@ function IndicadoresRecapagem() {
       dadosGraficoPrincipal,
       dadosMedidas,
     };
-  }, [data, mesSelecionado]);
+  }, [dataEnvio, dataEntrega, mesSelecionado]);
 
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="animate-spin text-blue-600 mb-4" size={50} />
-        <p className="font-black text-slate-400 uppercase">
-          Filtrando Período...
+        <p className="font-black text-slate-400 uppercase tracking-widest">
+          Sincronizando Fluxo Real...
         </p>
       </div>
     );
@@ -178,13 +187,11 @@ function IndicadoresRecapagem() {
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-[1600px] mx-auto">
-        {/* HEADER RESPONSIVO */}
+        {/* HEADER */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-800 flex items-center gap-4 uppercase text-center lg:text-left">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-800 flex items-center gap-4 uppercase">
             <LayoutDashboard className="text-blue-600" size={36} />
-            Painel:{" "}
-            {mesSelecionado === 0 ? "Anual" : mesesNomes[mesSelecionado]}{" "}
-            {anoSelecionado}
+            Indicadores Recapagem
           </h1>
 
           <div className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
@@ -214,28 +221,28 @@ function IndicadoresRecapagem() {
           </div>
         </div>
 
-        {/* CARDS KPI RESPONSIVOS */}
+        {/* CARDS KPI */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <CardStats
-            title="Coletados"
+            title="Enviados p/ Reforma"
             value={stats.totalColetados}
             icon={<Truck size={35} />}
             color="bg-blue-600"
           />
           <CardStats
-            title="Entregues"
+            title="Recebidos no Pátio"
             value={stats.totalEntregues}
             icon={<CheckCircle2 size={35} />}
             color="bg-emerald-500"
           />
           <CardStats
-            title="Taxa Retorno"
+            title="Taxa de Giro"
             value={`${stats.totalColetados > 0 ? ((stats.totalEntregues / stats.totalColetados) * 100).toFixed(1) : 0}%`}
             icon={<TrendingUp size={35} />}
             color="bg-orange-500"
           />
           <CardStats
-            title="Investimento"
+            title="Investimento Período"
             value={stats.totalInvestido.toLocaleString("pt-BR", {
               style: "currency",
               currency: "BRL",
@@ -245,12 +252,17 @@ function IndicadoresRecapagem() {
           />
         </div>
 
-        {/* PRIMEIRA LINHA DE GRÁFICOS */}
+        {/* GRÁFICOS DE ÁREA E PIZZA */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-slate-200">
-            <h3 className="text-xl font-black text-slate-800 uppercase mb-8">
-              Evolução do Fluxo
-            </h3>
+            <div className="mb-8">
+              <h3 className="text-xl font-black text-slate-800 uppercase">
+                Evolução de Entradas e Saídas
+              </h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                Azul: Coletados p/ Reforma | Verde: Entregues pela Reformadora
+              </p>
+            </div>
             <div className="h-[300px] md:h-[450px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.dadosGraficoPrincipal}>
@@ -296,7 +308,7 @@ function IndicadoresRecapagem() {
 
           <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-slate-200">
             <h3 className="text-xl font-black text-slate-800 uppercase mb-8 text-center">
-              Status
+              Motivos de Saída
             </h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -340,7 +352,7 @@ function IndicadoresRecapagem() {
           </div>
         </div>
 
-        {/* SEGUNDA LINHA: GRÁFICO DE MEDIDAS (NOVO) */}
+        {/* GRÁFICO DE MEDIDAS */}
         <div className="grid grid-cols-1 gap-8">
           <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-slate-200">
             <div className="flex items-center gap-4 mb-8">
@@ -348,15 +360,12 @@ function IndicadoresRecapagem() {
                 <Layers size={24} />
               </div>
               <h3 className="text-xl font-black text-slate-800 uppercase">
-                Volume por Medida (275 vs 215)
+                Volume por Medida (Envios)
               </h3>
             </div>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={stats.dadosMedidas}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
+                <BarChart data={stats.dadosMedidas}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -378,7 +387,7 @@ function IndicadoresRecapagem() {
                     dataKey="quantidade"
                     radius={[10, 10, 0, 0]}
                     barSize={60}
-                    name="Quantidade de Pneus"
+                    name="Quantidade"
                   >
                     {stats.dadosMedidas.map((entry, index) => (
                       <Cell

@@ -10,6 +10,7 @@ import TelaInicial from "../Home/Home";
 import PneusHome from "../Pneus/PneusHome";
 import PesquisaPneus from "../Pneus/PesquisaPneus";
 import AtualizarCadastro from "../Pneus/AtualizarCadastro";
+import PneusARemover from "../Pneus/PneusARemover";
 
 // Carros
 import CarrosInfo from "../Carros/CarrosInfo";
@@ -91,6 +92,14 @@ export default function AppRoutes() {
           element={
             <RotaProtegida>
               <PesquisaPneus />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="remover"
+          element={
+            <RotaProtegida>
+              <PneusARemover />
             </RotaProtegida>
           }
         />

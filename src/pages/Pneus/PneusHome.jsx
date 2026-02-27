@@ -66,11 +66,11 @@ export default function PneusHome() {
       desc: "Ver pneus em manutenção",
     },
     {
-      title: "Sucatas",
-      icon: "🗑️",
-      path: "/pneus/sucatas",
-      color: "bg-red-100",
-      desc: "Histórico de descartes",
+      title: "Pneus a Remover", // Alterado para refletir a nova função
+      icon: "🧹", // Mudei para uma vassourinha (limpeza), mas pode manter o lixo
+      path: "/pneus/remover", // PADRONIZADO PARA MINÚSCULO
+      color: "bg-orange-100", // Mudei para laranja para diferenciar de "erro/deleção"
+      desc: "Higienização de pneus parados",
     },
   ];
 
