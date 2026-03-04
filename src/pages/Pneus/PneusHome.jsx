@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../services/supabaseClient"; // Importamos o supabase diretamente para usar a View
+import { supabase } from "../../services/supabaseClient";
 
 export default function PneusHome() {
   const navigate = useNavigate();
@@ -12,22 +12,14 @@ export default function PneusHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ... dentro do useEffect ...
     async function carregarDados() {
       try {
         setLoading(true);
-
-        // Adicionamos um check para evitar erro de 'auth' caso o cliente não tenha iniciado
-        if (!supabase) return;
-
         const { data, error } = await supabase
           .from("contagem_pneus_view")
-          .select("*"); // Removi o .single() para evitar erro caso a view mude
-
-        if (error) throw error;
-
+          .select("*");
         if (data && data.length > 0) {
-          const info = data[0]; // Como é um resumo, pegamos a primeira linha
+          const info = data[0];
           setResumo({
             total: info.total || 0,
             reformadora: info.reforma || 0,
@@ -35,7 +27,7 @@ export default function PneusHome() {
           });
         }
       } catch (error) {
-        console.error("Erro ao carregar resumo:", error.message);
+        console.error("Erro:", error.message);
       } finally {
         setLoading(false);
       }
@@ -49,28 +41,30 @@ export default function PneusHome() {
       icon: "🔍",
       path: "/pneus/busca",
       color: "bg-blue-100",
-      desc: "Filtrar por empresa e fogo",
     },
+    {
+      title: "Inventário",
+      icon: "📝",
+      path: "/pneus/inventario",
+      color: "bg-purple-100",
+    }, // CARD ADICIONADO
     {
       title: "Cadastrar Novo",
       icon: "➕",
       path: "/pneus/cadastro",
       color: "bg-green-100",
-      desc: "Adicionar pneu unitário",
     },
     {
       title: "Na Reformadora",
       icon: "⚙️",
       path: "/pneus/na-reforma",
       color: "bg-yellow-100",
-      desc: "Ver pneus em manutenção",
     },
     {
-      title: "Pneus a Remover", // Alterado para refletir a nova função
-      icon: "🧹", // Mudei para uma vassourinha (limpeza), mas pode manter o lixo
-      path: "/pneus/remover", // PADRONIZADO PARA MINÚSCULO
-      color: "bg-orange-100", // Mudei para laranja para diferenciar de "erro/deleção"
-      desc: "Higienização de pneus parados",
+      title: "Pneus a Remover",
+      icon: "🧹",
+      path: "/pneus/remover",
+      color: "bg-orange-100",
     },
   ];
 
@@ -80,7 +74,8 @@ export default function PneusHome() {
         Gerenciamento de Pneus
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      {/* Grid ajustada para 5 colunas no desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
         {cards.map((card, index) => (
           <div
             key={index}
@@ -89,45 +84,46 @@ export default function PneusHome() {
           >
             <span className="text-4xl mb-3">{card.icon}</span>
             <h3 className="font-bold text-lg">{card.title}</h3>
-            <p className="text-xs text-gray-400 mt-1 uppercase">
+            <p className="text-[10px] text-gray-400 mt-2 uppercase font-semibold">
               Clique para gerenciar
             </p>
           </div>
         ))}
       </div>
 
+      {/* Resumo da Frota */}
       <div className="bg-white p-8 rounded-xl shadow-sm border">
         <h2 className="text-center font-bold text-gray-500 mb-8 text-xs uppercase tracking-widest">
           Resumo da Frota
         </h2>
         {loading ? (
           <p className="text-center animate-pulse text-gray-400">
-            Carregando indicadores...
+            Carregando...
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center border-r">
               <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">
-                Total Cadastrado
+                Total
               </p>
               <p className="text-4xl font-black text-gray-800">
-                {resumo.total.toLocaleString("pt-BR")}
+                {resumo.total}
               </p>
             </div>
             <div className="text-center border-r">
               <p className="text-[10px] font-bold text-yellow-600 uppercase mb-1">
-                Na Reformadora
+                Reforma
               </p>
               <p className="text-4xl font-black text-gray-800">
-                {resumo.reformadora.toLocaleString("pt-BR")}
+                {resumo.reformadora}
               </p>
             </div>
             <div className="text-center">
               <p className="text-[10px] font-bold text-green-600 uppercase mb-1">
-                Em Estoque
+                Estoque
               </p>
               <p className="text-4xl font-black text-gray-800">
-                {resumo.estoque.toLocaleString("pt-BR")}
+                {resumo.estoque}
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { Routes, Route, Link, Navigate } from "react-router-dom";
 
-// LOGIN (Corrigido o caminho conforme sua estrutura)
+// LOGIN (Ajustado o caminho para subir um nível e entrar em components)
 import Login from "../components/Login";
 
 // Home
@@ -11,6 +11,7 @@ import PneusHome from "../Pneus/PneusHome";
 import PesquisaPneus from "../Pneus/PesquisaPneus";
 import AtualizarCadastro from "../Pneus/AtualizarCadastro";
 import PneusARemover from "../Pneus/PneusARemover";
+import InventarioPneus from "../Pneus/InventarioPneus"; // <-- IMPORTAÇÃO ATUALIZADA
 
 // Carros
 import CarrosInfo from "../Carros/CarrosInfo";
@@ -64,10 +65,10 @@ const Pagina404 = () => (
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* ROTA DE LOGIN (Livre para acesso) */}
+      {/* ROTA DE LOGIN */}
       <Route path="/login" element={<Login />} />
 
-      {/* TODAS AS ROTAS ABAIXO EXIGEM LOGIN */}
+      {/* ROTA RAIZ */}
       <Route
         path="/"
         element={
@@ -92,6 +93,15 @@ export default function AppRoutes() {
           element={
             <RotaProtegida>
               <PesquisaPneus />
+            </RotaProtegida>
+          }
+        />
+        {/* NOVA ROTA DE INVENTÁRIO ADICIONADA */}
+        <Route
+          path="inventario"
+          element={
+            <RotaProtegida>
+              <InventarioPneus />
             </RotaProtegida>
           }
         />
@@ -173,6 +183,7 @@ export default function AppRoutes() {
         />
       </Route>
 
+      {/* MÓDULO CARROS E OUTROS */}
       <Route
         path="/carros"
         element={
@@ -190,6 +201,7 @@ export default function AppRoutes() {
         }
       />
 
+      {/* MÓDULO CALIBRAGEM */}
       <Route path="/calibragem">
         <Route
           index
@@ -233,6 +245,7 @@ export default function AppRoutes() {
         />
       </Route>
 
+      {/* MÓDULO MOVIMENTAÇÕES */}
       <Route path="/movimentacoes">
         <Route
           index
@@ -268,6 +281,7 @@ export default function AppRoutes() {
         />
       </Route>
 
+      {/* MÓDULO EQUIPAMENTOS */}
       <Route
         path="/equipamentos"
         element={
@@ -277,7 +291,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Se der erro 404, volta para o início (que vai pedir login se necessário) */}
+      {/* 404 */}
       <Route path="*" element={<Pagina404 />} />
     </Routes>
   );
